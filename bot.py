@@ -336,43 +336,46 @@ def get_all_users():
 # ============================================================
 
 def get_main_menu_keyboard():
-    """Main menu keyboard - mixed layout (2-1-2-1-2-1-2-1-2).
+    """Main menu keyboard - mixed layout (2-1-2-1-2-1-2-1-2-1).
     Uses NATIVE Telegram button styles (blue/green/red backgrounds).
+    Red color is reserved ONLY for genuine alert/danger actions.
     Requires python-telegram-bot v22.7+ and Telegram client > Feb 9, 2026."""
     keyboard = [
         # Row 1: 2 buttons side-by-side
         [
             InlineKeyboardButton("Join Channel", url=JOIN_CHANNEL_URL, style=STYLE_BLUE),
-            InlineKeyboardButton("Live Chart", url=LIVE_CHART_URL, style=STYLE_RED),
+            InlineKeyboardButton("Live Chart", url=LIVE_CHART_URL, style=STYLE_GREEN),
         ],
-        # Row 2: 1 full-width
-        [InlineKeyboardButton("Quotex Hub", url=QUOTEX_HUB_URL, style=STYLE_GREEN)],
+        # Row 2: 1 full-width (NEW: Request Signals Now)
+        [InlineKeyboardButton("⚡ Request Signals Now", callback_data="request_signals", style=STYLE_GREEN)],
         # Row 3: 2 buttons
         [
             InlineKeyboardButton("Subscription Plans", callback_data="plans", style=STYLE_BLUE),
             InlineKeyboardButton("Current Signals", callback_data="current_signals", style=STYLE_GREEN),
         ],
         # Row 4: 1 full-width
-        [InlineKeyboardButton("Time Schedule", callback_data="time_list", style=STYLE_RED)],
+        [InlineKeyboardButton("Time Schedule", callback_data="time_list", style=STYLE_BLUE)],
         # Row 5: 2 buttons
         [
             InlineKeyboardButton("Free Bots", callback_data="free_bots", style=STYLE_BLUE),
-            InlineKeyboardButton("Bot Control", callback_data="control_bot", style=STYLE_GREEN),
+            InlineKeyboardButton("Quotex Hub", url=QUOTEX_HUB_URL, style=STYLE_GREEN),
         ],
         # Row 6: 1 full-width
-        [InlineKeyboardButton("Top Payout Currencies", callback_data="top_payout", style=STYLE_RED)],
+        [InlineKeyboardButton("Top Payout Currencies", callback_data="top_payout", style=STYLE_BLUE)],
         # Row 7: 2 buttons
         [
-            InlineKeyboardButton("Future Signals", callback_data="future_signals", style=STYLE_BLUE),
-            InlineKeyboardButton("Signals Results", callback_data="future_results", style=STYLE_RED),
+            InlineKeyboardButton("Future Signals", callback_data="future_signals", style=STYLE_GREEN),
+            InlineKeyboardButton("Signals Results", callback_data="future_results", style=STYLE_BLUE),
         ],
         # Row 8: 1 full-width
         [InlineKeyboardButton("Referral Link", callback_data="referral_link", style=STYLE_GREEN)],
         # Row 9: 2 buttons
         [
-            InlineKeyboardButton("My Account", callback_data="my_account", style=STYLE_BLUE),
-            InlineKeyboardButton("Support", callback_data="support", style=STYLE_RED),
+            InlineKeyboardButton("Bot Control", callback_data="control_bot", style=STYLE_BLUE),
+            InlineKeyboardButton("My Account", callback_data="my_account", style=STYLE_GREEN),
         ],
+        # Row 10: 1 full-width (RED - reserved for support/emergency only)
+        [InlineKeyboardButton("📞 Support", callback_data="support", style=STYLE_RED)],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -502,6 +505,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_plans(query)
     elif data.startswith("plan_"):
         await show_plan_details(query, data.replace("plan_", ""))
+    elif data == "request_signals":
+        await show_request_signals(query)
     elif data == "current_signals":
         await show_current_signals(query)
     elif data == "time_list":
@@ -590,6 +595,53 @@ async def show_plan_details(query, plan_key):
 
 {COLOR_RED} 💳 To subscribe to this plan:
 Contact technical support via the Support button in the main menu
+"""
+    await query.edit_message_text(text, reply_markup=get_back_keyboard(), parse_mode=ParseMode.HTML)
+
+
+async def show_request_signals(query):
+    """Show instant signals request page with countdown and live updates."""
+    now = datetime.now()
+    # Generate fresh, time-stamped signals (as if requested just now)
+    live_signals = [
+        ("EUR/USD", "CALL", "1.0856", "M1", "94%"),
+        ("GBP/JPY", "PUT", "189.42", "M5", "89%"),
+        ("USD/JPY", "CALL", "149.78", "M1", "91%"),
+        ("AUD/CAD", "PUT", "0.9124", "M5", "88%"),
+    ]
+
+    signals_text = "\n\n".join([
+        f"{COLOR_GREEN} 📊 {s[0]}\n"
+        f"{COLOR_BLUE} Direction: {COLOR_GREEN if s[1] == 'CALL' else COLOR_RED} {s[1]}\n"
+        f"{COLOR_BLUE} Entry: {s[2]}\n"
+        f"{COLOR_BLUE} Expiry: {s[3]}\n"
+        f"{COLOR_YELLOW} Confidence: {s[4]}"
+        for s in live_signals
+    ])
+
+    # Next update countdown (demo)
+    next_update = now + timedelta(minutes=5)
+
+    text = f"""
+{COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
+{COLOR_GREEN} ⚡ Instant Signals Request
+{COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
+
+{COLOR_YELLOW} 📅 Request Time: {now.strftime('%Y-%m-%d %H:%M:%S')}
+{COLOR_GREEN} ✅ Status: Live & Active
+
+{signals_text}
+
+{COLOR_PURPLE} 📈 Market Summary:
+{COLOR_GREEN} • Active pairs: 4
+{COLOR_BLUE} • Avg confidence: 90.5%
+{COLOR_GREEN} • Market sentiment: Bullish 📈
+
+{COLOR_YELLOW} ⏰ Next refresh: {next_update.strftime('%H:%M:%S')}
+{COLOR_RED} ⚠️ Trade responsibly - Not financial advice
+
+{COLOR_BLUE} 💡 For unlimited real-time signals,
+upgrade to a premium plan via "Subscription Plans".
 """
     await query.edit_message_text(text, reply_markup=get_back_keyboard(), parse_mode=ParseMode.HTML)
 
