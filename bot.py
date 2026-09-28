@@ -34,7 +34,7 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-from telegram.constants import ParseMode
+from telegram.constants import ParseMode, KeyboardButtonStyle
 
 # ============================================================
 # 1) CONFIGURATION
@@ -109,53 +109,30 @@ PLANS = [
 ]
 
 # ============================================================
-# COLOR SYSTEM - Enhanced Visual Styling
+# COLOR SYSTEM - Native Telegram Button Styles (v22.7+)
 # ============================================================
-# Telegram Bot API does NOT support native button background colors.
-# This is a hard Telegram platform limitation, NOT a library limitation.
-# ALL Telegram bots use emoji prefixes to simulate colored buttons.
+# Telegram Bot API 9.4+ supports NATIVE colored button backgrounds!
+# Requires python-telegram-bot >= 22.7 (we use 22.8)
+# Works on Telegram client builds released AFTER February 9, 2026.
+# Older clients will display buttons without styling (graceful fallback).
 #
-# We use LARGE colored squares (🟥🟦🟩🟨🟪) which are much more visible
-# than small circles (🔴🔵🟢), plus decorative separators.
+# Only 3 colors are supported by Telegram:
+#   - PRIMARY  → Blue background
+#   - SUCCESS  → Green background
+#   - DANGER   → Red background
 # ============================================================
 
-# Large colored squares (PRIMARY - most visible)
-COLOR_BLUE = "🟦"
-COLOR_RED = "🟥"
-COLOR_GREEN = "🟩"
-COLOR_YELLOW = "🟨"
-COLOR_PURPLE = "🟪"
+# Style aliases for cleaner code
+STYLE_BLUE = KeyboardButtonStyle.PRIMARY    # 🔵 Blue
+STYLE_GREEN = KeyboardButtonStyle.SUCCESS   # 🟢 Green
+STYLE_RED = KeyboardButtonStyle.DANGER      # 🔴 Red
 
-# Decorative separators for visual structure
-SEP = "┃"
-ARROW = "›"
-DOT = "•"
-STAR = "✦"
-DIAMOND = "◆"
-
-# ============================================================
-# BUTTON LABEL BUILDERS (with enhanced visual styling)
-# ============================================================
-
-def btn_blue(text):
-    """Blue colored button label"""
-    return f"{COLOR_BLUE} {SEP} {text}"
-
-def btn_red(text):
-    """Red colored button label"""
-    return f"{COLOR_RED} {SEP} {text}"
-
-def btn_green(text):
-    """Green colored button label"""
-    return f"{COLOR_GREEN} {SEP} {text}"
-
-def btn_yellow(text):
-    """Yellow colored button label"""
-    return f"{COLOR_YELLOW} {SEP} {text}"
-
-def btn_purple(text):
-    """Purple colored button label"""
-    return f"{COLOR_PURPLE} {SEP} {text}"
+# Keep emoji constants for MESSAGE text (not buttons)
+COLOR_BLUE = "🔵"
+COLOR_RED = "🔴"
+COLOR_GREEN = "🟢"
+COLOR_YELLOW = "🟡"
+COLOR_PURPLE = "🟣"
 
 # Referral link template (auto-updated on startup)
 REFERRAL_LINK_TEMPLATE = f"https://t.me/{BOT_USERNAME}?start=ref_{{user_id}}"
@@ -360,40 +337,41 @@ def get_all_users():
 
 def get_main_menu_keyboard():
     """Main menu keyboard - mixed layout (2-1-2-1-2-1-2-1-2).
-    Uses LARGE colored squares (🟥🟦🟩🟨🟪) for maximum visibility."""
+    Uses NATIVE Telegram button styles (blue/green/red backgrounds).
+    Requires python-telegram-bot v22.7+ and Telegram client > Feb 9, 2026."""
     keyboard = [
         # Row 1: 2 buttons side-by-side
         [
-            InlineKeyboardButton(btn_blue("Join Channel"), url=JOIN_CHANNEL_URL),
-            InlineKeyboardButton(btn_red("Live Chart"), url=LIVE_CHART_URL),
+            InlineKeyboardButton("Join Channel", url=JOIN_CHANNEL_URL, style=STYLE_BLUE),
+            InlineKeyboardButton("Live Chart", url=LIVE_CHART_URL, style=STYLE_RED),
         ],
         # Row 2: 1 full-width
-        [InlineKeyboardButton(btn_green("Quotex Hub"), url=QUOTEX_HUB_URL)],
+        [InlineKeyboardButton("Quotex Hub", url=QUOTEX_HUB_URL, style=STYLE_GREEN)],
         # Row 3: 2 buttons
         [
-            InlineKeyboardButton(btn_blue("Subscription Plans"), callback_data="plans"),
-            InlineKeyboardButton(btn_green("Current Signals"), callback_data="current_signals"),
+            InlineKeyboardButton("Subscription Plans", callback_data="plans", style=STYLE_BLUE),
+            InlineKeyboardButton("Current Signals", callback_data="current_signals", style=STYLE_GREEN),
         ],
         # Row 4: 1 full-width
-        [InlineKeyboardButton(btn_red("Time Schedule"), callback_data="time_list")],
+        [InlineKeyboardButton("Time Schedule", callback_data="time_list", style=STYLE_RED)],
         # Row 5: 2 buttons
         [
-            InlineKeyboardButton(btn_blue("Free Bots"), callback_data="free_bots"),
-            InlineKeyboardButton(btn_green("Bot Control"), callback_data="control_bot"),
+            InlineKeyboardButton("Free Bots", callback_data="free_bots", style=STYLE_BLUE),
+            InlineKeyboardButton("Bot Control", callback_data="control_bot", style=STYLE_GREEN),
         ],
         # Row 6: 1 full-width
-        [InlineKeyboardButton(btn_red("Top Payout Currencies"), callback_data="top_payout")],
+        [InlineKeyboardButton("Top Payout Currencies", callback_data="top_payout", style=STYLE_RED)],
         # Row 7: 2 buttons
         [
-            InlineKeyboardButton(btn_blue("Future Signals"), callback_data="future_signals"),
-            InlineKeyboardButton(btn_red("Signals Results"), callback_data="future_results"),
+            InlineKeyboardButton("Future Signals", callback_data="future_signals", style=STYLE_BLUE),
+            InlineKeyboardButton("Signals Results", callback_data="future_results", style=STYLE_RED),
         ],
         # Row 8: 1 full-width
-        [InlineKeyboardButton(btn_green("Referral Link"), callback_data="referral_link")],
+        [InlineKeyboardButton("Referral Link", callback_data="referral_link", style=STYLE_GREEN)],
         # Row 9: 2 buttons
         [
-            InlineKeyboardButton(btn_blue("My Account"), callback_data="my_account"),
-            InlineKeyboardButton(btn_red("Support"), callback_data="support"),
+            InlineKeyboardButton("My Account", callback_data="my_account", style=STYLE_BLUE),
+            InlineKeyboardButton("Support", callback_data="support", style=STYLE_RED),
         ],
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -402,18 +380,18 @@ def get_main_menu_keyboard():
 def get_back_keyboard():
     """Back to main menu."""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn_blue("Back to Main Menu"), callback_data="main_menu")]
+        [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu", style=STYLE_BLUE)]
     ])
 
 
 def get_plans_keyboard():
     """Plans selection keyboard."""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn_green("Free Plan - $0"), callback_data="plan_free")],
-        [InlineKeyboardButton(btn_blue("Weekly Plan - $15"), callback_data="plan_weekly")],
-        [InlineKeyboardButton(btn_red("Monthly Plan - $45"), callback_data="plan_monthly")],
-        [InlineKeyboardButton(btn_green("Gold Plan - $120"), callback_data="plan_gold")],
-        [InlineKeyboardButton(btn_blue("Back"), callback_data="main_menu")],
+        [InlineKeyboardButton("Free Plan - $0", callback_data="plan_free", style=STYLE_GREEN)],
+        [InlineKeyboardButton("Weekly Plan - $15", callback_data="plan_weekly", style=STYLE_BLUE)],
+        [InlineKeyboardButton("Monthly Plan - $45", callback_data="plan_monthly", style=STYLE_RED)],
+        [InlineKeyboardButton("Gold Plan - $120", callback_data="plan_gold", style=STYLE_GREEN)],
+        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_BLUE)],
     ])
 
 
@@ -423,11 +401,11 @@ def get_control_keyboard(is_admin):
         return get_back_keyboard()
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(btn_green("New Signal"), callback_data="admin_new_signal"),
-            InlineKeyboardButton(btn_blue("Broadcast"), callback_data="admin_broadcast"),
+            InlineKeyboardButton("New Signal", callback_data="admin_new_signal", style=STYLE_GREEN),
+            InlineKeyboardButton("Broadcast", callback_data="admin_broadcast", style=STYLE_BLUE),
         ],
-        [InlineKeyboardButton(btn_red("Bot Statistics"), callback_data="admin_stats")],
-        [InlineKeyboardButton(btn_blue("Back"), callback_data="main_menu")],
+        [InlineKeyboardButton("Bot Statistics", callback_data="admin_stats", style=STYLE_RED)],
+        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_BLUE)],
     ])
 
 
@@ -435,8 +413,8 @@ def get_admin_confirm_keyboard():
     """Admin confirm/cancel keyboard."""
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(btn_green("Yes, Send"), callback_data="admin_confirm_send"),
-            InlineKeyboardButton(btn_red("Cancel"), callback_data="control_bot"),
+            InlineKeyboardButton("Yes, Send", callback_data="admin_confirm_send", style=STYLE_GREEN),
+            InlineKeyboardButton("Cancel", callback_data="control_bot", style=STYLE_RED),
         ]
     ])
 
@@ -698,8 +676,8 @@ async def show_free_bots(query):
 Click the "Visit Free Bots" button below
 """
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn_green("🎁 Visit Free Bots"), url=FREE_BOTS_URL)],
-        [InlineKeyboardButton(btn_blue("Back"), callback_data="main_menu")],
+        [InlineKeyboardButton("🎁 Visit Free Bots", url=FREE_BOTS_URL, style=STYLE_GREEN)],
+        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_BLUE)],
     ])
     await query.edit_message_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
@@ -824,8 +802,8 @@ async def show_future_results(query):
 {COLOR_GREEN} 🎯 To follow real-time results:
 """
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn_green("📊 Results Channel"), url=RESULTS_CHANNEL_URL)],
-        [InlineKeyboardButton(btn_blue("Back"), callback_data="main_menu")],
+        [InlineKeyboardButton("📊 Results Channel", url=RESULTS_CHANNEL_URL, style=STYLE_GREEN)],
+        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_BLUE)],
     ])
     await query.edit_message_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
@@ -874,8 +852,8 @@ async def show_referral_link(query, user_id):
         text += f"\n{COLOR_RED} No referrals yet. Share your link to get started!"
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn_green("📤 Share Link"), url=f"https://t.me/share/url?url={ref_link}&text=Join%20the%20Advanced%20Trading%20Signals%20Bot!")],
-        [InlineKeyboardButton(btn_blue("Back"), callback_data="main_menu")],
+        [InlineKeyboardButton("📤 Share Link", url=f"https://t.me/share/url?url={ref_link}&text=Join%20the%20Advanced%20Trading%20Signals%20Bot!", style=STYLE_GREEN)],
+        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_BLUE)],
     ])
     await query.edit_message_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
@@ -950,9 +928,9 @@ async def show_support(query):
 Contact support via the button below
 """
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(btn_green("📞 Contact Support"), url=SUPPORT_URL)],
-        [InlineKeyboardButton(btn_blue("📢 Official Channel"), url=JOIN_CHANNEL_URL)],
-        [InlineKeyboardButton(btn_red("Back"), callback_data="main_menu")],
+        [InlineKeyboardButton("📞 Contact Support", url=SUPPORT_URL, style=STYLE_GREEN)],
+        [InlineKeyboardButton("📢 Official Channel", url=JOIN_CHANNEL_URL, style=STYLE_BLUE)],
+        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_RED)],
     ])
     await query.edit_message_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
