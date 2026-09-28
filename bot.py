@@ -422,6 +422,63 @@ def get_admin_confirm_keyboard():
     ])
 
 
+def get_signal_bots_keyboard():
+    """Signal source selection keyboard - 3 bot platforms + Back.
+    Shown when user clicks 'Request Signals Now'."""
+    return InlineKeyboardMarkup([
+        # Row 1: First bot (full-width)
+        [InlineKeyboardButton("🤖 Quotex Signals", callback_data="bot_quotex", style=STYLE_GREEN)],
+        # Row 2: Second bot (full-width)
+        [InlineKeyboardButton("📈 Pocket Option Signals", callback_data="bot_pocket", style=STYLE_GREEN)],
+        # Row 3: Third bot (full-width)
+        [InlineKeyboardButton("💎 IQ Option Signals", callback_data="bot_iqoption", style=STYLE_GREEN)],
+        # Row 4: Back
+        [InlineKeyboardButton("← Back", callback_data="main_menu", style=STYLE_BLUE)],
+    ])
+
+
+def get_free_bots_list_keyboard():
+    """Free bots list keyboard - 8 bots in 2-2-2-2 layout + Back.
+    Shown when user clicks 'Free Bots'."""
+    return InlineKeyboardMarkup([
+        # Row 1: 2 buttons
+        [
+            InlineKeyboardButton("📊 Signals Bot", url=FREE_BOTS_URL, style=STYLE_BLUE),
+            InlineKeyboardButton("🔔 Price Alerts", url=FREE_BOTS_URL, style=STYLE_GREEN),
+        ],
+        # Row 2: 2 buttons
+        [
+            InlineKeyboardButton("📰 Market News", url=FREE_BOTS_URL, style=STYLE_BLUE),
+            InlineKeyboardButton("🧮 Profit Calc", url=FREE_BOTS_URL, style=STYLE_GREEN),
+        ],
+        # Row 3: 2 buttons
+        [
+            InlineKeyboardButton("💎 Crypto Scanner", url=FREE_BOTS_URL, style=STYLE_BLUE),
+            InlineKeyboardButton("📅 Economic Calendar", url=FREE_BOTS_URL, style=STYLE_GREEN),
+        ],
+        # Row 4: 2 buttons
+        [
+            InlineKeyboardButton("🎯 Pattern Detector", url=FREE_BOTS_URL, style=STYLE_BLUE),
+            InlineKeyboardButton("💵 Currency Converter", url=FREE_BOTS_URL, style=STYLE_GREEN),
+        ],
+        # Row 5: Back (full-width)
+        [InlineKeyboardButton("← Back", callback_data="main_menu", style=STYLE_BLUE)],
+    ])
+
+
+def get_back_to_signal_keyboard():
+    """Back keyboard for signal bot pages - returns to signal selection."""
+    return InlineKeyboardMarkup([
+        # Row 1: 2 buttons
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data="request_signals", style=STYLE_GREEN),
+            InlineKeyboardButton("← Back", callback_data="request_signals", style=STYLE_BLUE),
+        ],
+        # Row 2: Back to main
+        [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu", style=STYLE_BLUE)],
+    ])
+
+
 # ============================================================
 # 4) HANDLERS
 # ============================================================
@@ -507,6 +564,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_plan_details(query, data.replace("plan_", ""))
     elif data == "request_signals":
         await show_request_signals(query)
+    elif data.startswith("bot_"):
+        await show_bot_signals(query, data)
     elif data == "current_signals":
         await show_current_signals(query)
     elif data == "time_list":
@@ -600,50 +659,98 @@ Contact technical support via the Support button in the main menu
 
 
 async def show_request_signals(query):
-    """Show instant signals request page with countdown and live updates."""
+    """Show instant signals request page - lets user pick which bot to get signals from."""
     now = datetime.now()
-    # Generate fresh, time-stamped signals (as if requested just now)
-    live_signals = [
-        ("EUR/USD", "CALL", "1.0856", "M1", "94%"),
-        ("GBP/JPY", "PUT", "189.42", "M5", "89%"),
-        ("USD/JPY", "CALL", "149.78", "M1", "91%"),
-        ("AUD/CAD", "PUT", "0.9124", "M5", "88%"),
-    ]
-
-    signals_text = "\n\n".join([
-        f"{COLOR_GREEN} 📊 {s[0]}\n"
-        f"{COLOR_BLUE} Direction: {COLOR_GREEN if s[1] == 'CALL' else COLOR_RED} {s[1]}\n"
-        f"{COLOR_BLUE} Entry: {s[2]}\n"
-        f"{COLOR_BLUE} Expiry: {s[3]}\n"
-        f"{COLOR_YELLOW} Confidence: {s[4]}"
-        for s in live_signals
-    ])
-
-    # Next update countdown (demo)
-    next_update = now + timedelta(minutes=5)
-
     text = f"""
 {COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
-{COLOR_GREEN} ⚡ Instant Signals Request
+{COLOR_GREEN} ⚡ Request Signals Now
 {COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
 
 {COLOR_YELLOW} 📅 Request Time: {now.strftime('%Y-%m-%d %H:%M:%S')}
 {COLOR_GREEN} ✅ Status: Live & Active
 
+{COLOR_PURPLE} 🤖 Select the bot you want signals from:
+
+{COLOR_GREEN} • Quotex Signals
+{COLOR_BLUE}   Best for binary options (OTC available)
+
+{COLOR_GREEN} • Pocket Option Signals
+{COLOR_BLUE}   Fast execution + high payout rates
+
+{COLOR_GREEN} • IQ Option Signals
+{COLOR_BLUE}   Most traded currencies supported
+
+{COLOR_YELLOW} 💡 Choose a platform below to get instant signals:
+"""
+    await query.edit_message_text(
+        text,
+        reply_markup=get_signal_bots_keyboard(),
+        parse_mode=ParseMode.HTML
+    )
+
+
+async def show_bot_signals(query, bot_key):
+    """Show signals for the selected bot platform."""
+    now = datetime.now()
+
+    # Bot info mapping
+    bots_info = {
+        "bot_quotex": {
+            "name": "Quotex Signals",
+            "emoji": "🤖",
+            "pairs": [("EUR/USD OTC", "CALL", "1.0856", "M1", "94%"),
+                      ("GBP/JPY OTC", "PUT", "189.42", "M5", "89%"),
+                      ("USD/JPY OTC", "CALL", "149.78", "M1", "91%")],
+        },
+        "bot_pocket": {
+            "name": "Pocket Option Signals",
+            "emoji": "📈",
+            "pairs": [("AUD/CAD", "PUT", "0.9124", "M5", "88%"),
+                      ("EUR/GBP", "CALL", "0.8541", "M1", "92%"),
+                      ("USD/CHF", "PUT", "0.8923", "M5", "90%")],
+        },
+        "bot_iqoption": {
+            "name": "IQ Option Signals",
+            "emoji": "💎",
+            "pairs": [("BTC/USD", "CALL", "67250", "M15", "87%"),
+                      ("ETH/USD", "PUT", "3450", "M15", "85%"),
+                      ("Gold/XAU", "CALL", "2034", "M5", "93%")],
+        },
+    }
+
+    bot_info = bots_info.get(bot_key, bots_info["bot_quotex"])
+
+    signals_text = "\n\n".join([
+        f"{COLOR_GREEN} 📊 {p[0]}\n"
+        f"{COLOR_BLUE} Direction: {COLOR_GREEN if p[1] == 'CALL' else COLOR_RED} {p[1]}\n"
+        f"{COLOR_BLUE} Entry: {p[2]}\n"
+        f"{COLOR_BLUE} Expiry: {p[3]}\n"
+        f"{COLOR_YELLOW} Confidence: {p[4]}"
+        for p in bot_info["pairs"]
+    ])
+
+    text = f"""
+{COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
+{COLOR_GREEN} {bot_info['emoji']} {bot_info['name']}
+{COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
+
+{COLOR_YELLOW} 📅 Request Time: {now.strftime('%Y-%m-%d %H:%M:%S')}
+{COLOR_GREEN} ✅ Status: Active signals below
+
 {signals_text}
 
-{COLOR_PURPLE} 📈 Market Summary:
-{COLOR_GREEN} • Active pairs: 4
-{COLOR_BLUE} • Avg confidence: 90.5%
-{COLOR_GREEN} • Market sentiment: Bullish 📈
+{COLOR_PURPLE} 📈 Bot Summary:
+{COLOR_GREEN} • Active pairs: {len(bot_info['pairs'])}
+{COLOR_BLUE} • Avg confidence: 90%
+{COLOR_GREEN} • Sentiment: Bullish 📈
 
-{COLOR_YELLOW} ⏰ Next refresh: {next_update.strftime('%H:%M:%S')}
 {COLOR_RED} ⚠️ Trade responsibly - Not financial advice
-
-{COLOR_BLUE} 💡 For unlimited real-time signals,
-upgrade to a premium plan via "Subscription Plans".
 """
-    await query.edit_message_text(text, reply_markup=get_back_keyboard(), parse_mode=ParseMode.HTML)
+    await query.edit_message_text(
+        text,
+        reply_markup=get_back_to_signal_keyboard(),
+        parse_mode=ParseMode.HTML
+    )
 
 
 async def show_current_signals(query):
@@ -705,6 +812,7 @@ Best trading times are during session overlaps (London + New York)
 
 
 async def show_free_bots(query):
+    """Show free bots list with 8 buttons in 2-2-2-2 layout."""
     text = f"""
 {COLOR_BLUE} ━━━━━━━━━━━━━━━━━━━━━
 {COLOR_GREEN} 🎁 Available Free Bots
@@ -712,26 +820,37 @@ async def show_free_bots(query):
 
 {COLOR_YELLOW} 🤖 Free bots you can benefit from:
 
-{COLOR_GREEN} 1️⃣ Free Currency Signals Bot
-{COLOR_BLUE} Basic analysis for major currencies
+{COLOR_GREEN} 📊 Signals Bot
+{COLOR_BLUE}   Basic analysis for major currencies
 
-{COLOR_GREEN} 2️⃣ Price Alerts Bot
-{COLOR_BLUE} Alerts when price reaches a specific level
+{COLOR_GREEN} 🔔 Price Alerts Bot
+{COLOR_BLUE}   Alerts when price reaches a specific level
 
-{COLOR_GREEN} 3️⃣ Market News Bot
-{COLOR_BLUE} Latest economic news as soon as published
+{COLOR_GREEN} 📰 Market News Bot
+{COLOR_BLUE}   Latest economic news as soon as published
 
-{COLOR_GREEN} 4️⃣ Profit/Loss Calculator Bot
-{COLOR_BLUE} Easily calculate your trading profits
+{COLOR_GREEN} 🧮 Profit/Loss Calculator Bot
+{COLOR_BLUE}   Easily calculate your trading profits
 
-{COLOR_RED} 🔗 To access the free bots:
-Click the "Visit Free Bots" button below
+{COLOR_GREEN} 💎 Crypto Scanner Bot
+{COLOR_BLUE}   Scan crypto pairs for opportunities
+
+{COLOR_GREEN} 📅 Economic Calendar Bot
+{COLOR_BLUE}   Track upcoming economic events
+
+{COLOR_GREEN} 🎯 Pattern Detector Bot
+{COLOR_BLUE}   Detect chart patterns automatically
+
+{COLOR_GREEN} 💵 Currency Converter Bot
+{COLOR_BLUE}   Convert between 150+ currencies
+
+{COLOR_YELLOW} 👇 Click any bot below to open it:
 """
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎁 Visit Free Bots", url=FREE_BOTS_URL, style=STYLE_GREEN)],
-        [InlineKeyboardButton("Back", callback_data="main_menu", style=STYLE_BLUE)],
-    ])
-    await query.edit_message_text(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    await query.edit_message_text(
+        text,
+        reply_markup=get_free_bots_list_keyboard(),
+        parse_mode=ParseMode.HTML
+    )
 
 
 async def show_control_bot(query, user_id):
